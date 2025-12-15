@@ -338,216 +338,91 @@
                         <div v-for="(p, sid) in players" :key="sid" class="player-card"><img
                                 :src="p.avatar.startsWith('data') ? p.avatar : 'https://ui-avatars.com/api/?name='+p.name"
                                 class="avatar-small" style="width: 80px; height: 80px;">
-                            <div style="margin-top: 10px; font-weight: bold;"> {
-                                {
-                                p.name
-                                }
-                                }
-
+                            <div style="margin-top: 10px; font-weight: bold;">
+                                {{ p.name }}
                             </div><small v-if="p.is_host" style="color: var(--accent-color)">👑 القائد</small>
                         </div>
                     </div><button v-if="isHost" @click="startGame" :disabled="Object.keys(players).length < 3">بدء
-                        اللعبة ({
-                        {
-                        Object.keys(players).length
-                        }
-                        }
-
-                        /3+) </button>
+                        اللعبة ({{ Object.keys(players).length }}/3+) </button>
                     <p v-else>بانتظار القائد ليبدأ...</p>
                 </div>
             </div>
-            < !-- GAME DAY -->
-                <div v-else-if="state === 'DAY'" class="card">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px;">
-                        <h2 style="color: var(--accent-color);">الجولة {
-                            {
-                            roundNum
-                            }
-                            }
-
-                        </h2>
-                        <div style="font-size: 1.5rem; font-weight: bold;"
-                            :style="{ color: timer < 10 ? 'red' : 'white' }">⏱️ {
-                            {
-                            formatTime(timer)
-                            }
-                            }
-
-                        </div>
-                    </div>
-                    <div style="margin: 15px 0;">
-                        <div class="role-pill"> {
-                            {
-                            myCharacter
-                            }
-                            }
-
-                        </div>
-                        <div class="bio-box">"{{ myCharacterBio }}"
-
-                        </div>
-                        <div class="role-pill" style="border-color: var(--primary-color); color: var(--primary-color);">
-                            {
-                            {
-                            myRoleName
-                            }
-                            }
-
-                        </div>
-                        <p style="font-size: 0.9rem; color: #888;"> {
-                            {
-                            myRoleDesc
-                            }
-                            }
-
-                        </p>
-                    </div>
-                    <div class="evidence-history">
-                        <h4>📂 ملف القضية: {
-                            {
-                            scenarioTitle
-                            }
-                            }
-
-                        </h4>
-                        <div v-for="(clue, idx) in evidenceHistory" :key="idx" class="clue-item">
-                            <div class="clue-label">دليل #{{ idx + 1 }
-                                }
-
-                            </div> {
-                            {
-                            clue
-                            }
-                            }
-
-                        </div>
-                    </div>
-                    <div v-if="!amIAlive"
-                        style="background: #330000; padding: 10px; border-radius: 5px; margin-bottom: 10px;">👻 أنت ميت
-                        ! يمكنك المشاهدة فقط. </div>
-                    <h3>التصويت</h3>
-                    <p style="font-size: 0.8rem; color: #aaa;">تم التصويت: {
-                        {
-                        votesCast
-                        }
-                        }
-
-                        / {
-                        {
-                        totalAlive
-                        }
-                        }
-
-                    </p>
-                    <div class="player-grid">
-                        <div v-for="(p, sid) in players" :key="sid" class="player-card" :class="{ dead: !p.alive }">
-                            <div v-if="voteCounts[sid]" class="vote-badge"> {
-                                {
-                                voteCounts[sid].count
-                                }
-                                }
-
-                            </div><img
-                                :src="p.avatar.startsWith('data') ? p.avatar : 'https://ui-avatars.com/api/?name='+p.name"
-                                class="avatar-small">
-                            <div style="font-weight: bold; margin: 5px 0;"> {
-                                {
-                                p.character
-                                }
-                                }
-
-                            </div><small style="color: #888"> {
-                                {
-                                p.name
-                                }
-                                }
-
-                            </small><button v-if="amIAlive && p.alive && sid !== mySid" @click="vote(sid)"
-                                style="font-size: 0.8rem; padding: 5px; margin-top: 5px;">اتهام 🛑 </button>
-                        </div>
+            <!-- GAME DAY -->
+            <div v-else-if="state === 'DAY'" class="card">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                    <h2 style="color: var(--accent-color);">الجولة {{ roundNum }}</h2>
+                    <div style="font-size: 1.5rem; font-weight: bold;" :style="{ color: timer < 10 ? 'red' : 'white' }">
+                        ⏱️ {{ formatTime(timer) }}
                     </div>
                 </div>
-                < !-- KICK MODAL -->
-                    <div v-if="kickedData" class="modal">
-                        <div class="modal-content">
-                            <h1>🚫 تم طرد {
-                                {
-                                kickedData.name
-                                }
-                                }
-
-                            </h1>
-                            <div style="font-size: 2rem; margin: 10px;">⚖️</div>
-                            <p>الشخصية: <strong> {
-                                    {
-                                    kickedData.character
-                                    }
-                                    }
-
-                                </strong></p>
-                            <p>الدور الحقيقي: <strong style="color: var(--primary-color)"> {
-                                    {
-                                    kickedData.role=='Mafioso' ? 'مافيا': 'بريء'
-                                    }
-                                    }
-
-                                </strong></p>
-                            <p>عدد الأصوات: {
-                                {
-                                kickedData.votes
-                                }
-                                }
-
-                            </p>
-                        </div>
+                <div style="margin: 15px 0;">
+                    <div class="role-pill">{{ myCharacter }}</div>
+                    <div class="bio-box">"{{ myCharacterBio }}"</div>
+                    <div class="role-pill" style="border-color: var(--primary-color); color: var(--primary-color);">
+                        {{ myRoleName }}
                     </div>
-                    < !-- END MODAL -->
-                        <div v-if="state === 'END'" class="modal">
-                            <div class="modal-content">
-                                <h1 style="color: var(--accent-color)">🏆 فاز {
-                                    {
-                                    gameOverData.winner
-                                    }
-                                    }
-
-                                </h1>
-                                <p style="color: #ccc; margin-bottom: 20px;"> {
-                                    {
-                                    gameOverData.message
-                                    }
-                                    }
-
-                                </p>
-                                <div class="player-grid" style="max-height: 400px; overflow-y: auto;">
-                                    <div v-for="(p, sid) in gameOverData.players" :key="sid" class="player-card"><img
-                                            :src="p.avatar.startsWith('data') ? p.avatar : 'https://ui-avatars.com/api/?name='+p.name"
-                                            class="avatar-small">
-                                        <div> {
-                                            {
-                                            p.name
-                                            }
-                                            }
-
-                                        </div><small> {
-                                            {
-                                            p.character
-                                            }
-                                            }
-
-                                        </small>
-                                        <div style="color: var(--accent-color)"> {
-                                            {
-                                            p.role
-                                            }
-                                            }
-
-                                        </div>
-                                    </div>
-                                </div><button @click="reload" style="margin-top: 20px;">لعب مجدداً</button>
-                            </div>
+                    <p style="font-size: 0.9rem; color: #888;">
+                        {{ myRoleDesc }}
+                    </p>
+                </div>
+                <div class="evidence-history">
+                    <h4>📂 ملف القضية: {{ scenarioTitle }}</h4>
+                    <div v-for="(clue, idx) in evidenceHistory" :key="idx" class="clue-item">
+                        <div class="clue-label">دليل #{{ idx + 1 }}</div>
+                        {{ clue }}
+                    </div>
+                </div>
+                <div v-if="!amIAlive"
+                    style="background: #330000; padding: 10px; border-radius: 5px; margin-bottom: 10px;">👻 أنت ميت
+                    ! يمكنك المشاهدة فقط. </div>
+                <h3>التصويت</h3>
+                <p style="font-size: 0.8rem; color: #aaa;">تم التصويت: {{ votesCast }} / {{ totalAlive }}</p>
+                <div class="player-grid">
+                    <div v-for="(p, sid) in players" :key="sid" class="player-card" :class="{ dead: !p.alive }">
+                        <div v-if="voteCounts[sid]" class="vote-badge">
+                            {{ voteCounts[sid].count }}
+                        </div><img
+                            :src="p.avatar.startsWith('data') ? p.avatar : 'https://ui-avatars.com/api/?name='+p.name"
+                            class="avatar-small">
+                        <div style="font-weight: bold; margin: 5px 0;">
+                            {{ p.character }}
+                        </div><small style="color: #888">
+                            {{ p.name }}
+                        </small><button v-if="amIAlive && p.alive && sid !== mySid" @click="vote(sid)"
+                            style="font-size: 0.8rem; padding: 5px; margin-top: 5px;">اتهام 🛑 </button>
+                    </div>
+                </div>
+            </div>
+            <!-- KICK MODAL -->
+            <div v-if="kickedData" class="modal">
+                <div class="modal-content">
+                    <h1>🚫 تم طرد {{ kickedData.name }}</h1>
+                    <div style="font-size: 2rem; margin: 10px;">⚖️</div>
+                    <p>الشخصية: <strong>{{ kickedData.character }}</strong></p>
+                    <p>الدور الحقيقي: <strong style="color: var(--primary-color)">
+                            {{ kickedData.role=='Mafioso' ? 'مافيا': 'بريء' }}
+                        </strong></p>
+                    <p>عدد الأصوات: {{ kickedData.votes }}</p>
+                </div>
+            </div>
+            <!-- END MODAL -->
+            <div v-if="state === 'END'" class="modal">
+                <div class="modal-content">
+                    <h1 style="color: var(--accent-color)">🏆 فاز {{ gameOverData.winner }}</h1>
+                    <p style="color: #ccc; margin-bottom: 20px;">
+                        {{ gameOverData.message }}
+                    </p>
+                    <div class="player-grid" style="max-height: 400px; overflow-y: auto;">
+                        <div v-for="(p, sid) in gameOverData.players" :key="sid" class="player-card"><img
+                                :src="p.avatar.startsWith('data') ? p.avatar : 'https://ui-avatars.com/api/?name='+p.name"
+                                class="avatar-small">
+                            <div>{{ p.name }}</div><small>{{ p.character }}</small>
+                            <div style="color: var(--accent-color)">{{ p.role }}</div>
                         </div>
+                    </div><button @click="reload" style="margin-top: 20px;">لعب مجدداً</button>
+                </div>
+            </div>
         </transition>
         {% endraw %}
     </div>
