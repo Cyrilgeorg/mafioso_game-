@@ -297,14 +297,13 @@
 <body>
     <div id="app">
         {% raw %}
+        {% raw %}
         <audio ref="audioPlayer" loop id="bg-music">
-            <source src="https://archive.org/download/TheGodfatherThemeSong/The%20Godfather%20Theme%20Song.mp3"
+            <source src="https://archive.org/download/Jazz_Sampler-9619/Kevin_MacLeod_-_I_Knew_a_Guy.mp3"
                 type="audio/mp3">
         </audio>
 
-        <div class="audio-ctrl" @click="toggleMusic" :class="{ 'playing': musicPlaying }">
-            {{ musicPlaying ? '🔊 موسيقى الخلفية: تشغيل' : '🔇 موسيقى الخلفية: متوقفة' }}
-        </div>
+        <!-- Audio control removed as per user request -->
 
         <transition name="fade" mode="out-in">
             <div v-if="state === 'LOBBY'" class="card">
