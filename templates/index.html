@@ -296,7 +296,6 @@
 
 <body>
     <div id="app">
-        {% raw %}
         <audio ref="audioPlayer" loop id="bg-music">
             <source src="https://archive.org/download/Jazz_Sampler-9619/Kevin_MacLeod_-_I_Knew_a_Guy.mp3"
                 type="audio/mp3">
@@ -304,6 +303,7 @@
 
         <!-- Audio control removed as per user request -->
 
+        {% raw %}
         <transition name="fade" mode="out-in">
             <div v-if="state === 'LOBBY'" class="card">
                 <h1 style="font-family: 'Courier New'; text-shadow: 0 0 10px red;">🕵️‍♂️ مافيوسو: الظلال</h1>
