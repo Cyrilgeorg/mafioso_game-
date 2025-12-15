@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مافيوسو - اللعبة</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --surface-color: #1a1a1a;
+            --primary-color: #b71c1c;
+            --text-color: #e0e0e0;
+            --accent-color: #ffb300;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#1f1f1f 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-color);
+            font-family: 'Cairo', sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            direction: rtl;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 900px;
+            padding: 20px;
+        }
+
+        .card {
+            background-color: var(--surface-color);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+            text-align: center;
+            border: 1px solid #333;
+            position: relative;
+        }
+
+        /* Scanline effect for realism */
+        .card::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #2c2c2c;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: 'Cairo';
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        /* Custom File Upload */
+        .file-upload-btn {
+            background: #333;
+            border: 2px dashed #555;
+            padding: 20px;
+            cursor: pointer;
+            margin: 10px 0;
+            display: block;
+            color: #aaa;
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            font-weight: bold;
+            font-family: 'Cairo';
+            position: relative;
+            z-index: 10;
+        }
+
+        button:hover {
+            filter: brightness(1.2);
+            box-shadow: 0 0 15px var(--primary-color);
+        }
+
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .image-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--accent-color);
+            margin: 10px auto;
+            display: block;
+        }
+
+        .avatar-small {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #555;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .role-pill {
+            display: inline-block;
+            padding: 5px 15px;
+            background: #333;
+            border-radius: 20px;
+            margin: 5px;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        .bio-box {
+            background: #252525;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-style: italic;
+            color: #ccc;
+            margin: 10px 0;
+            border-right: 3px solid var(--accent-color);
+        }
+
+        .evidence-history {
+            text-align: right;
+            background: #000;
+            padding: 15px;
+            border-right: 4px solid var(--primary-color);
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 15px 0;
+        }
+
+        .clue-item {
+            margin-bottom: 15px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .clue-label {
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        .player-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .player-card {
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 8px;
+            position: relative;
+            transition: 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .vote-badge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: red;
+            color: white;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border: 2px solid #fff;
+            z-index: 5;
+        }
+
+        .player-card.dead {
+            opacity: 0.5;
+            filter: grayscale(1);
+        }
+
+        .player-card.voted-for {
+            border: 2px solid var(--primary-color);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--surface-color);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 90%;
+            border: 2px solid var(--accent-color);
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .settings-box {
+            background: #222;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: right;
+        }
+
+        .audio-ctrl {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            z-index: 1000;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .audio-ctrl:hover {
+            background: var(--accent-color);
+            color: black;
+        }
+
+        .audio-ctrl.playing {
+            border-color: #4CAF50;
+            color: #4CAF50;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        {% raw %}
+        <audio ref="audioPlayer" loop id="bg-music">
+            <source src="https://archive.org/download/TheGodfatherThemeSong/The%20Godfather%20Theme%20Song.mp3"
+                type="audio/mp3">
+        </audio>
+
+        <div class="audio-ctrl" @click="toggleMusic" :class="{ 'playing': musicPlaying }">
+            {{ musicPlaying ? '🔊 موسيقى الخلفية: تشغيل' : '🔇 موسيقى الخلفية: متوقفة' }}
+        </div>
+
+        <transition name="fade" mode="out-in">
+            <div v-if="state === 'LOBBY'" class="card">
+                <h1 style="font-family: 'Courier New'; text-shadow: 0 0 10px red;">🕵️‍♂️ مافيوسو: الظلال</h1>
+                <div v-if="!joined">
+                    <input v-model="username" placeholder="اسمك الحركي">
+                    <div style="text-align: center;">
+                        <img v-if="avatarPreview" :src="avatarPreview" class="image-preview">
+                        <label class="file-upload-btn">
+                            <input type="file" @change="handleImageUpload" accept="image/*" style="display: none;">
+                            📸 اضغط لرفع صورتك
+                        </label>
+                    </div>
+                    <button @click="createRoom">إنشاء غرفة</button>
+                    <input v-model="roomCodeInput" placeholder="كود الغرفة" style="direction: ltr;">
+                    <button @click="joinRoom" style="background: #444;">دخول</button>
+                </div>
+                <div v-else>
+                    <h2>غرفة: {{ roomCode }}</h2>
+                    <div v-if="isHost" class="settings-box">
+                        <h3>⚙️ إعدادات اللعبة</h3>
+                        <label class="settings-label">عدد المافيا</label><select v-model="config.mafia_count">
+                            <option value="1">1 مافيا (3+ لاعبين)</option>
+                            <option value="2">2 مافيا (6+ لاعبين)</option>
+                            <option value="3">3 مافيا (8+ لاعبين)</option>
+                        </select><label class="settings-label">وقت الجولة</label><select v-model="config.round_time">
+                            <option value="60">60 ثانية (سريع)</option>
+                            <option value="120">دقيقتين (عادي)</option>
+                            <option value="300">5 دقائق (واقعي جداً)</option>
+                        </select>
+                    </div>
+                    <div class="player-grid">
+                        <div v-for="(p, sid) in players" :key="sid" class="player-card"><img
+                                :src="p.avatar.startsWith('data') ? p.avatar : 'https://ui-avatars.com/api/?name='+p.name"
+                                class="avatar-small" style="width: 80px; height: 80px;">
+                            <div style="margin-top: 10px; font-weight: bold;"> {
+                                {
+                                p.name
+                                }
+                                }
+
+                            </div><small v-if="p.is_host" style="color: var(--accent-color)">👑 القائد</small>
+                        </div>
+                    </div><button v-if="isHost" @click="startGame" :disabled="Object.keys(players).length < 3">بدء
+                        اللعبة ({
+                        {
+                        Object.keys(players).length
+                        }
+                        }
+
+                        /3+) </button>
+                    <p v-else>بانتظار القائد ليبدأ...</p>
+                </div>
+            </div>
+            < !-- GAME DAY -->
+                <div v-else-if="state === 'DAY'" class="card">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                        <h2 style="color: var(--accent-color);">الجولة {
+                            {
+                            roundNum
+                            }
+                            }
+
+                        </h2>
+                        <div style="font-size: 1.5rem; font-weight: bold;"
+                            :style="{ color: timer < 10 ? 'red' : 'white' }">⏱️ {
+                            {
+                            formatTime(timer)
+                            }
+                            }
+
+                        </div>
+                    </div>
+                    <div style="margin: 15px 0;">
+                        <div class="role-pill"> {
+                            {
+                            myCharacter
+                            }
+                            }
+
+                        </div>
+                        <div class="bio-box">"{{ myCharacterBio }}"
+
+                        </div>
+                        <div class="role-pill" style="border-color: var(--primary-color); color: var(--primary-color);">
+                            {
+                            {
+                            myRoleName
+                            }
+                            }
+
+                        </div>
+                        <p style="font-size: 0.9rem; color: #888;"> {
+                            {
+                            myRoleDesc
+                            }
+                            }
+
+                        </p>
+                    </div>
+                    <div class="evidence-history">
+                        <h4>📂 ملف القضية: {
+                            {
+                            scenarioTitle
+                            }
+                            }
+
+                        </h4>
+                        <div v-for="(clue, idx) in evidenceHistory" :key="idx" class="clue-item">
+                            <div class="clue-label">دليل #{{ idx + 1 }
+                                }
+
+                            </div> {
+                            {
+                            clue
+                            }
+                            }
+
+                        </div>
+                    </div>
+                    <div v-if="!amIAlive"
+                        style="background: #330000; padding: 10px; border-radius: 5px; margin-bottom: 10px;">👻 أنت ميت
+                        ! يمكنك المشاهدة فقط. </div>
+                    <h3>التصويت</h3>
+                    <p style="font-size: 0.8rem; color: #aaa;">تم التصويت: {
+                        {
+                        votesCast
+                        }
+                        }
+
+                        / {
+                        {
+                        totalAlive
+                        }
+                        }
+
+                    </p>
+                    <div class="player-grid">
+                        <div v-for="(p, sid) in players" :key="sid" class="player-card" :class="{ dead: !p.alive }">
+                            <div v-if="voteCounts[sid]" class="vote-badge"> {
+                                {
+                                voteCounts[sid].count
+                                }
+                                }
+
+                            </div><img
+                                :src="p.avatar.startsWith('data') ? p.avatar : 'https://ui-avatars.com/api/?name='+p.name"
+                                class="avatar-small">
+                            <div style="font-weight: bold; margin: 5px 0;"> {
+                                {
+                                p.character
+                                }
+                                }
+
+                            </div><small style="color: #888"> {
+                                {
+                                p.name
+                                }
+                                }
+
+                            </small><button v-if="amIAlive && p.alive && sid !== mySid" @click="vote(sid)"
+                                style="font-size: 0.8rem; padding: 5px; margin-top: 5px;">اتهام 🛑 </button>
+                        </div>
+                    </div>
+                </div>
+                < !-- KICK MODAL -->
+                    <div v-if="kickedData" class="modal">
+                        <div class="modal-content">
+                            <h1>🚫 تم طرد {
+                                {
+                                kickedData.name
+                                }
+                                }
+
+                            </h1>
+                            <div style="font-size: 2rem; margin: 10px;">⚖️</div>
+                            <p>الشخصية: <strong> {
+                                    {
+                                    kickedData.character
+                                    }
+                                    }
+
+                                </strong></p>
+                            <p>الدور الحقيقي: <strong style="color: var(--primary-color)"> {
+                                    {
+                                    kickedData.role=='Mafioso' ? 'مافيا': 'بريء'
+                                    }
+                                    }
+
+                                </strong></p>
+                            <p>عدد الأصوات: {
+                                {
+                                kickedData.votes
+                                }
+                                }
+
+                            </p>
+                        </div>
+                    </div>
+                    < !-- END MODAL -->
+                        <div v-if="state === 'END'" class="modal">
+                            <div class="modal-content">
+                                <h1 style="color: var(--accent-color)">🏆 فاز {
+                                    {
+                                    gameOverData.winner
+                                    }
+                                    }
+
+                                </h1>
+                                <p style="color: #ccc; margin-bottom: 20px;"> {
+                                    {
+                                    gameOverData.message
+                                    }
+                                    }
+
+                                </p>
+                                <div class="player-grid" style="max-height: 400px; overflow-y: auto;">
+                                    <div v-for="(p, sid) in gameOverData.players" :key="sid" class="player-card"><img
+                                            :src="p.avatar.startsWith('data') ? p.avatar : 'https://ui-avatars.com/api/?name='+p.name"
+                                            class="avatar-small">
+                                        <div> {
+                                            {
+                                            p.name
+                                            }
+                                            }
+
+                                        </div><small> {
+                                            {
+                                            p.character
+                                            }
+                                            }
+
+                                        </small>
+                                        <div style="color: var(--accent-color)"> {
+                                            {
+                                            p.role
+                                            }
+                                            }
+
+                                        </div>
+                                    </div>
+                                </div><button @click="reload" style="margin-top: 20px;">لعب مجدداً</button>
+                            </div>
+                        </div>
+        </transition>
+        {% endraw %}
+    </div>
+
+    <script>
+        const { createApp, ref, computed } = Vue;
+        const socket = io();
+
+        createApp({
+            setup() {
+                const state = ref('LOBBY');
+                const joined = ref(false);
+                const username = ref('');
+                const roomCodeInput = ref('');
+                const roomCode = ref('');
+                const players = ref({});
+                const isHost = ref(false);
+
+                // Realism
+                const avatarPreview = ref(null);
+                const musicPlaying = ref(false);
+                const audioPlayer = ref(null);
+
+                // Config
+                const config = ref({ mafia_count: 1, round_time: 60 });
+
+                // Game State
+                const mySid = ref('');
+                const roundNum = ref(0);
+                const timer = ref(0);
+                const scenarioTitle = ref('');
+                const evidenceHistory = ref([]);
+                const votesCast = ref(0);
+                const totalAlive = ref(0);
+                const voteCounts = ref({});
+
+                const myRoleName = ref('');
+                const myRoleDesc = ref('');
+                const myCharacter = ref('');
+                const myCharacterBio = ref('');
+
+                const kickedData = ref(null);
+                const gameOverData = ref(null);
+                const amIAlive = computed(() => players.value[mySid.value] && players.value[mySid.value].alive);
+
+                // Socket Logic
+                socket.on('connect', () => { mySid.value = socket.id; });
+
+                socket.on('room_created', (data) => {
+                    roomCode.value = data.room_code;
+                    players.value = data.players;
+                    joined.value = true;
+                    isHost.value = true;
+                });
+
+                socket.on('join_success', (data) => {
+                    roomCode.value = data.room_code;
+                    joined.value = true;
+                });
+
+                socket.on('player_update', (data) => { players.value = data.players; });
+
+                socket.on('game_started', (data) => {
+                    myRoleName.value = data.role_name;
+                    myRoleDesc.value = data.role_desc;
+                    myCharacter.value = data.character;
+                    myCharacterBio.value = data.character_bio || 'لا يوجد وصف';
+                    state.value = 'DAY';
+                    toggleMusic(true);
+                });
+
+                socket.on('round_start', (data) => {
+                    kickedData.value = null;
+                    roundNum.value = data.round_num;
+                    scenarioTitle.value = data.title;
+                    evidenceHistory.value = data.history;
+                    timer.value = data.timer;
+                    votesCast.value = 0;
+                    voteCounts.value = {};
+                });
+
+                socket.on('timer_update', (data) => { timer.value = data.time; });
+
+                socket.on('vote_update', (data) => {
+                    votesCast.value = data.votes_count;
+                    totalAlive.value = data.total_alive;
+                    voteCounts.value = data.breakdown || {};
+                });
+
+                socket.on('player_kicked', (data) => { kickedData.value = data; });
+
+                socket.on('game_over', (data) => {
+                    kickedData.value = null; gameOverData.value = data; state.value = 'END';
+                });
+
+                socket.on('error', (msg) => alert(msg.message));
+
+                // Image Handling
+                const handleImageUpload = (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            const MAX_SIZE = 150;
+                            let width = img.width;
+                            let height = img.height;
+
+                            if (width > height) {
+                                if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+                            } else {
+                                if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+                            }
+
+                            canvas.width = width;
+                            canvas.height = height;
+                            ctx.drawImage(img, 0, 0, width, height);
+                            avatarPreview.value = canvas.toDataURL('image/jpeg', 0.7);
+                        };
+                        img.src = evt.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                };
+
+                const toggleMusic = (forcePlay = false) => {
+                    const audio = document.getElementById('bg-music');
+                    if (!audio) return;
+
+                    if (forcePlay === true || audio.paused) {
+                        const playPromise = audio.play();
+                        if (playPromise !== undefined) {
+                            playPromise.then(() => {
+                                musicPlaying.value = true;
+                            }).catch(error => {
+                                console.log("Auto-play prevented");
+                            });
+                        }
+                    } else {
+                        audio.pause();
+                        musicPlaying.value = false;
+                    }
+                };
+
+                setTimeout(() => toggleMusic(true), 1000);
+
+                const unlockAudio = () => {
+                    const overlay = document.getElementById('start-overlay');
+                    if (overlay) {
+                        overlay.style.opacity = '0';
+                        setTimeout(() => overlay.style.display = 'none', 500);
+                    }
+                    if (!musicPlaying.value) toggleMusic(true);
+                };
+
+                window.addEventListener('click', unlockAudio, { once: true });
+                window.addEventListener('touchstart', unlockAudio, { once: true });
+                window.addEventListener('keydown', unlockAudio, { once: true });
+
+                const formatTime = (s) => {
+                    const m = Math.floor(s / 60);
+                    const sec = s % 60;
+                    return `${m}:${sec < 10 ? '0' + sec : sec}`;
+                };
+
+                const createRoom = () => socket.emit('create_room', {
+                    username: username.value, avatar: avatarPreview.value || '👤'
+                });
+
+                const joinRoom = () => socket.emit('join_room', {
+                    username: username.value, room_code: roomCodeInput.value, avatar: avatarPreview.value || '👤'
+                });
+
+                const startGame = () => socket.emit('start_game', {
+                    room_code: roomCode.value, ...config.value
+                });
+
+                const vote = (sid) => socket.emit('cast_vote', {
+                    room_code: roomCode.value, target_sid: sid
+                });
+
+                const reload = () => window.location.reload();
+
+                return {
+                    state, joined, username, roomCodeInput, roomCode, players, isHost, config,
+                    roundNum, timer, scenarioTitle, evidenceHistory,
+                    myRoleName, myRoleDesc, myCharacter, myCharacterBio, mySid, amIAlive,
+                    votesCast, totalAlive, voteCounts, kickedData, gameOverData,
+                    avatarPreview, musicPlaying, audioPlayer,
+                    createRoom, joinRoom, startGame, vote, reload, handleImageUpload, toggleMusic, formatTime
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>
